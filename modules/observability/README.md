@@ -17,6 +17,19 @@ Gateway API Gateway.
 
 ## Storage
 
+```mermaid
+flowchart TB
+  Workloads[Workloads] --> Prom[Prometheus]
+  Workloads --> Loki[Loki]
+  Workloads --> Tempo[Tempo]
+  Prom --> Grafana[Grafana]
+  Loki --> Grafana
+  Tempo --> Grafana
+  Loki --> Obj1[S3-compatible Object Storage]
+  Tempo --> Obj2[S3-compatible Object Storage]
+  Prom --> Kiali[Kiali]
+```
+
 Loki and Tempo are configured for S3-compatible object storage, which works with
 OCI Object Storage customer secret keys. This avoids consuming block volume
 capacity for logs and traces.
@@ -61,6 +74,15 @@ module "observability" {
 
 ## Access
 
+```mermaid
+flowchart LR
+  User[User] --> GW[Shared Gateway]
+  GW --> Token[x-monitoring-token]
+  Token -->|valid| Apps[Grafana / Kiali / Tracing]
+  Token -->|invalid| Deny[403]
+  KialiToken[Kubernetes SA token] --> Kiali[Kiali RBAC]
+```
+
 Requests must include:
 
 ```text
@@ -76,3 +98,11 @@ Kiali still requires a Kubernetes ServiceAccount token when
 Grafana admin login uses the configured admin password. Read-only Grafana access
 can be provided through anonymous Viewer mode, but only after the request passes
 the shared Gateway token policy.
+
+## References
+
+- [Kiali token authentication](https://kiali.io/docs/configuration/authentication/token/)
+- [Kiali architecture](https://kiali.io/docs/architecture/architecture/)
+- [Grafana provisioning](https://grafana.com/docs/grafana/latest/administration/provisioning/)
+- [Grafana Loki storage](https://grafana.com/docs/loki/latest/configure/storage/)
+- [Grafana Tempo](https://grafana.com/docs/tempo/latest/)

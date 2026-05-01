@@ -54,6 +54,13 @@ observability routes.
 
 ## Central waypoint
 
+```mermaid
+flowchart LR
+  NS[Enrolled namespace] --> ZT[ztunnel]
+  ZT --> WP[istio-system waypoint Gateway]
+  WP --> SVC[Destination service]
+```
+
 Set `enable_central_egress_waypoint=true` to create a shared waypoint Gateway in
 `istio-system`. Namespaces listed in `central_egress_waypoint_namespaces` are
 labeled for ambient mode and configured to use the cross-namespace waypoint.
@@ -64,6 +71,20 @@ Gateway with `gatewayClassName: istio-waypoint`, and enrolled namespaces use the
 
 ## Bookinfo sample
 
+```mermaid
+flowchart LR
+  Product[productpage] --> Details[details]
+  Product --> Reviews[reviews v1/v2/v3]
+  Reviews --> Ratings[ratings]
+```
+
 Set `enable_bookinfo_sample=true` to install the Istio Bookinfo lab application
 in the `default` namespace. The sample is internal-only: it creates ClusterIP
 services and deployments, but no public Gateway route or LoadBalancer.
+
+## References
+
+- [Istio ambient waypoint proxies](https://istio.io/latest/docs/ambient/usage/waypoint/)
+- [Istio Bookinfo sample](https://istio.io/latest/docs/examples/bookinfo/)
+- [Gateway API](https://gateway-api.sigs.k8s.io/)
+- [cert-manager DNS01 webhook solver](https://cert-manager.io/docs/configuration/acme/dns01/webhook/)
