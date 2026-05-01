@@ -14,15 +14,24 @@ The goal is to provide composable, documented modules for Kubernetes labs and sm
 
 ## Planned Modules
 
-- `foundation`: compartments, common tags, IAM helpers, and cost guardrails.
-- `network`: VCN, public API/LB/node subnets, Internet Gateway, Service Gateway, route tables, NSGs.
-- `dns`: OCI public DNS zones and outputs for registrar delegation.
-- `oke`: OKE Basic cluster and A1 Flex worker pools.
-- `platform`: cert-manager, external-dns, Istio ambient, Gateway API, and wildcard ingress.
-- `observability`: Kiali, Prometheus/Grafana, Jaeger, and optional logs/traces.
-- `registry`: OCI Container Registry repositories and IAM policies.
-- `admin-box`: optional E2.1.Micro administration VM.
-- `databases`: optional Always Free database integrations.
+- [`foundation`](modules/foundation/): compartments, common tags, IAM helpers, and cost guardrails.
+- [`network`](modules/network/): VCN, public API/LB/node subnets, Internet Gateway, Service Gateway, route tables, NSGs.
+- [`dns`](modules/dns/): OCI public DNS zones and outputs for registrar delegation.
+- [`oke`](modules/oke/): OKE Basic cluster and A1 Flex worker pools.
+- [`platform`](modules/platform/): cert-manager, external-dns, Istio ambient, Gateway API, wildcard ingress, waypoint, and Bookinfo.
+- [`observability`](modules/observability/): Kiali, Prometheus/Grafana, Loki, Tempo, and protected routes.
+- [`object-storage`](modules/object-storage/): buckets and S3-compatible credentials for logs and traces.
+- [`registry`](modules/registry/): OCI Container Registry repositories and IAM policies.
+- [`admin-box`](modules/admin-box/): optional E2.1.Micro administration VM.
+- [`databases`](modules/databases/): optional Always Free database integrations.
+
+## Documentation Map
+
+- [OKE platform example](examples/oke-platform/README.md): root module example showing how the modules fit together.
+- [Consumer project](../oci-oke-always-free/README.md): complete runnable implementation using these modules.
+- [Consumer architecture](../oci-oke-always-free/docs/architecture.md): Mermaid diagrams for the full environment.
+- [Consumer usage guide](../oci-oke-always-free/docs/manual-de-uso.md): phased execution and operational access.
+- [Contribution guide](CONTRIBUTING.md): validation and contribution workflow.
 
 ## Repository Status
 

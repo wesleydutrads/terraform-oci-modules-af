@@ -82,6 +82,14 @@ Set `enable_bookinfo_sample=true` to install the Istio Bookinfo lab application
 in the `default` namespace. The sample is internal-only: it creates ClusterIP
 services and deployments, but no public Gateway route or LoadBalancer.
 
+## Related Documents
+
+- [Module library README](../../README.md)
+- [OKE platform example](../../examples/oke-platform/README.md)
+- [Consumer architecture](../../../oci-oke-always-free/docs/architecture.md)
+- [Consumer usage guide](../../../oci-oke-always-free/docs/manual-de-uso.md)
+- [Observability module](../observability/README.md)
+
 ## References
 
 - [Istio ambient waypoint proxies](https://istio.io/latest/docs/ambient/usage/waypoint/)

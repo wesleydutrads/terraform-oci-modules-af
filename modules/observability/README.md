@@ -99,6 +99,15 @@ Grafana admin login uses the configured admin password. Read-only Grafana access
 can be provided through anonymous Viewer mode, but only after the request passes
 the shared Gateway token policy.
 
+## Related Documents
+
+- [Module library README](../../README.md)
+- [OKE platform example](../../examples/oke-platform/README.md)
+- [Consumer architecture](../../../oci-oke-always-free/docs/architecture.md)
+- [Consumer usage guide](../../../oci-oke-always-free/docs/manual-de-uso.md)
+- [Platform module](../platform/README.md)
+- [Object storage module](../object-storage/README.md)
+
 ## References
 
 - [Kiali token authentication](https://kiali.io/docs/configuration/authentication/token/)
