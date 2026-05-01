@@ -52,6 +52,36 @@ variable "kiali_auth_strategy" {
   }
 }
 
+variable "istio_root_namespace" {
+  description = "Istio root namespace used by Kiali."
+  type        = string
+  default     = "istio-system"
+}
+
+variable "enable_monitoring_access_rbac" {
+  description = "Create admin and read-only ServiceAccounts for Kiali token login."
+  type        = bool
+  default     = true
+}
+
+variable "kiali_admin_service_account_name" {
+  description = "ServiceAccount name for full-admin Kiali access."
+  type        = string
+  default     = "kiali-admin"
+}
+
+variable "kiali_readonly_service_account_name" {
+  description = "ServiceAccount name for read-only Kiali access."
+  type        = string
+  default     = "kiali-readonly"
+}
+
+variable "enable_grafana_anonymous_viewer" {
+  description = "Enable Grafana anonymous Viewer access behind the shared Gateway token."
+  type        = bool
+  default     = true
+}
+
 variable "enable_grafana_persistence" {
   description = "Enable a PVC for Grafana. Keep false for Always Free defaults."
   type        = bool

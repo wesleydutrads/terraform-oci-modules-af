@@ -12,6 +12,8 @@ Gateway API Gateway.
 - optional legacy Jaeger all-in-one
 - HTTPRoutes for Kiali, Grafana, and tracing
 - Istio AuthorizationPolicy that requires a shared `x-monitoring-token` header
+- admin and read-only ServiceAccounts for Kiali token login
+- optional Grafana anonymous Viewer mode behind the shared Gateway token
 
 ## Storage
 
@@ -66,4 +68,11 @@ x-monitoring-token: <monitoring_token>
 ```
 
 Kiali still requires a Kubernetes ServiceAccount token when
-`kiali_auth_strategy="token"`.
+`kiali_auth_strategy="token"`. The module can create:
+
+- `kiali-admin`, bound to `cluster-admin`
+- `kiali-readonly`, bound to the Kiali viewer ClusterRole
+
+Grafana admin login uses the configured admin password. Read-only Grafana access
+can be provided through anonymous Viewer mode, but only after the request passes
+the shared Gateway token policy.

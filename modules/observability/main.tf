@@ -1,7 +1,8 @@
 locals {
   kubeconfig_path        = pathexpand(var.kubeconfig_path)
   tracing_host           = var.hosts.tracing
-  tracing_backend        = var.enable_tempo ? "tempo" : "jaeger"
+  tracing_backend        = var.enable_tempo ? "monitoring-grafana" : "jaeger"
+  tracing_backend_port   = var.enable_tempo ? 80 : 16686
   token_policy_manifest  = <<-YAML
     apiVersion: security.istio.io/v1
     kind: AuthorizationPolicy
@@ -87,7 +88,7 @@ locals {
       rules:
         - backendRefs:
             - name: ${local.tracing_backend}
-              port: ${var.enable_tempo ? 3200 : 16686}
+              port: ${local.tracing_backend_port}
     YAML
 }
 
@@ -115,6 +116,16 @@ resource "helm_release" "prometheus_stack" {
       grafana = {
         enabled       = true
         adminPassword = var.monitoring_token
+        "grafana.ini" = {
+          "auth.anonymous" = {
+            enabled  = var.enable_grafana_anonymous_viewer
+            org_name = "Main Org."
+            org_role = "Viewer"
+          }
+          users = {
+            viewers_can_edit = false
+          }
+        }
         persistence = {
           enabled          = var.enable_grafana_persistence
           storageClassName = var.monitoring_storage_class_name
@@ -379,6 +390,9 @@ resource "helm_release" "kiali" {
         prometheus = {
           url = "http://monitoring-kube-prometheus-prometheus.${var.namespace}.svc:9090"
         }
+        istio = {
+          root_namespace = var.istio_root_namespace
+        }
         grafana = {
           enabled      = var.enable_prometheus_stack
           internal_url = "http://monitoring-grafana.${var.namespace}.svc"
@@ -399,6 +413,68 @@ resource "helm_release" "kiali" {
       }
     })
   ]
+}
+
+resource "kubernetes_service_account_v1" "kiali_admin" {
+  count = var.enabled && var.enable_kiali && var.enable_monitoring_access_rbac ? 1 : 0
+
+  metadata {
+    name      = var.kiali_admin_service_account_name
+    namespace = kubernetes_namespace_v1.this[0].metadata[0].name
+  }
+}
+
+resource "kubernetes_cluster_role_binding_v1" "kiali_admin" {
+  count = var.enabled && var.enable_kiali && var.enable_monitoring_access_rbac ? 1 : 0
+
+  metadata {
+    name = "${var.namespace}-${var.kiali_admin_service_account_name}"
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = "cluster-admin"
+  }
+
+  subject {
+    kind      = "ServiceAccount"
+    name      = kubernetes_service_account_v1.kiali_admin[0].metadata[0].name
+    namespace = kubernetes_namespace_v1.this[0].metadata[0].name
+  }
+}
+
+resource "kubernetes_service_account_v1" "kiali_readonly" {
+  count = var.enabled && var.enable_kiali && var.enable_monitoring_access_rbac ? 1 : 0
+
+  metadata {
+    name      = var.kiali_readonly_service_account_name
+    namespace = kubernetes_namespace_v1.this[0].metadata[0].name
+  }
+
+  depends_on = [helm_release.kiali]
+}
+
+resource "kubernetes_cluster_role_binding_v1" "kiali_readonly" {
+  count = var.enabled && var.enable_kiali && var.enable_monitoring_access_rbac ? 1 : 0
+
+  metadata {
+    name = "${var.namespace}-${var.kiali_readonly_service_account_name}"
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = "kiali-viewer"
+  }
+
+  subject {
+    kind      = "ServiceAccount"
+    name      = kubernetes_service_account_v1.kiali_readonly[0].metadata[0].name
+    namespace = kubernetes_namespace_v1.this[0].metadata[0].name
+  }
+
+  depends_on = [helm_release.kiali]
 }
 
 resource "null_resource" "token_policy" {
