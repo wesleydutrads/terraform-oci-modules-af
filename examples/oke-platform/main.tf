@@ -46,6 +46,7 @@ module "oke" {
   source = "../../modules/oke"
 
   compartment_ocid    = module.foundation.compartment_ocid
+  region              = var.region
   cluster_name        = local.name_prefix
   vcn_id              = module.network.vcn_id
   api_subnet_id       = module.network.api_subnet_id

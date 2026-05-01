@@ -3,6 +3,11 @@ variable "compartment_ocid" {
   type        = string
 }
 
+variable "region" {
+  description = "OCI region used by the kubeconfig command output."
+  type        = string
+}
+
 variable "cluster_name" {
   description = "OKE cluster name."
   type        = string
@@ -80,22 +85,12 @@ variable "node_ocpus" {
   description = "OCPUs per node."
   type        = number
   default     = 2
-
-  validation {
-    condition     = var.node_ocpus * var.node_pool_size <= 4
-    error_message = "Total A1 OCPU must stay at or below 4."
-  }
 }
 
 variable "node_memory_gbs" {
   description = "Memory in GB per node."
   type        = number
   default     = 12
-
-  validation {
-    condition     = var.node_memory_gbs * var.node_pool_size <= 24
-    error_message = "Total A1 memory must stay at or below 24 GB."
-  }
 }
 
 variable "node_boot_volume_size_gbs" {

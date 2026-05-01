@@ -86,4 +86,21 @@ resource "oci_containerengine_node_pool" "this" {
     source_type             = "IMAGE"
     boot_volume_size_in_gbs = var.node_boot_volume_size_gbs
   }
+
+  lifecycle {
+    precondition {
+      condition     = var.node_ocpus * var.node_pool_size <= 4
+      error_message = "Total A1 OCPU must stay at or below the 4 OCPU Always Free budget."
+    }
+
+    precondition {
+      condition     = var.node_memory_gbs * var.node_pool_size <= 24
+      error_message = "Total A1 memory must stay at or below the 24 GB Always Free budget."
+    }
+
+    precondition {
+      condition     = var.node_boot_volume_size_gbs * var.node_pool_size <= 150
+      error_message = "Node boot volumes must leave free block volume budget for optional PVCs/admin box."
+    }
+  }
 }
