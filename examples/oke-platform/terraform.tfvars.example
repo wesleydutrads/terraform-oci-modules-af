@@ -1,0 +1,10 @@
+region             = "us-phoenix-1"
+tenancy_ocid       = "ocid1.tenancy.oc1..example"
+domain_name        = "example.com"
+acme_email         = "admin@example.com"
+kubernetes_version = "v1.35.2"
+node_image_ocid    = "ocid1.image.oc1.phx.example"
+availability_domain = "ABCD:PHX-AD-1"
+ssh_public_key     = "ssh-ed25519 AAAA..."
+api_allowed_cidrs  = ["203.0.113.10/32"]
+enable_platform    = false
