@@ -117,6 +117,13 @@ resource "oci_core_security_list" "lb" {
       max = 443
     }
   }
+
+  lifecycle {
+    ignore_changes = [
+      ingress_security_rules,
+      egress_security_rules
+    ]
+  }
 }
 
 resource "oci_core_security_list" "nodes" {
@@ -133,6 +140,12 @@ resource "oci_core_security_list" "nodes" {
   ingress_security_rules {
     source   = var.vcn_cidr
     protocol = "all"
+  }
+
+  lifecycle {
+    ignore_changes = [
+      ingress_security_rules
+    ]
   }
 }
 

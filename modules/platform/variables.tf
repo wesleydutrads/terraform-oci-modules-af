@@ -47,8 +47,38 @@ variable "enable_cert_manager" {
   default     = true
 }
 
+variable "enable_dns01_oci_webhook" {
+  description = "Install the OCI DNS01 cert-manager webhook."
+  type        = bool
+  default     = true
+}
+
+variable "dns01_oci_webhook_image_repository" {
+  description = "OCI DNS01 webhook image repository."
+  type        = string
+  default     = "ghcr.io/giovannicandido/cert-manager-webhook-oci"
+}
+
+variable "dns01_oci_webhook_image_tag" {
+  description = "OCI DNS01 webhook image tag."
+  type        = string
+  default     = "build-pipeline"
+}
+
 variable "enable_external_dns" {
   description = "Install external-dns."
+  type        = bool
+  default     = true
+}
+
+variable "external_dns_sources" {
+  description = "external-dns sources. Keep gateway-httproute disabled unless private Gateway addresses are filtered elsewhere."
+  type        = list(string)
+  default     = ["service"]
+}
+
+variable "enable_metrics_server" {
+  description = "Install Metrics Server for kubectl top and HPA resource metrics."
   type        = bool
   default     = true
 }

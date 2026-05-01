@@ -19,3 +19,14 @@ variable "freeform_tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "records" {
+  description = "DNS RRsets to manage inside the zone."
+  type = map(object({
+    domain = string
+    rtype  = string
+    ttl    = number
+    rdata  = list(string)
+  }))
+  default = {}
+}

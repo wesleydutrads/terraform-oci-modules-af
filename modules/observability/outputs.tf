@@ -18,7 +18,12 @@ output "grafana_service_name" {
   value       = "monitoring-grafana"
 }
 
-output "jaeger_service_name" {
-  description = "Jaeger query service name."
-  value       = "jaeger-query"
+output "tracing_service_name" {
+  description = "Tracing service name."
+  value       = var.enable_tempo ? "tempo" : "jaeger"
+}
+
+output "loki_service_name" {
+  description = "Loki gateway service name."
+  value       = "loki-gateway"
 }

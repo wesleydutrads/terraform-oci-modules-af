@@ -17,3 +17,8 @@ output "gateway_namespace" {
   description = "Public Gateway API object namespace."
   value       = local.istio_namespace
 }
+
+output "gateway_service_name" {
+  description = "Istio-managed LoadBalancer Service name for the public Gateway."
+  value       = "public-istio"
+}
