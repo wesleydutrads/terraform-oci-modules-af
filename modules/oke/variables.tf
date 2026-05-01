@@ -18,8 +18,18 @@ variable "vcn_id" {
   type        = string
 }
 
+variable "vcn_cidr" {
+  description = "VCN CIDR used for internal OKE control plane and worker communication."
+  type        = string
+}
+
 variable "api_subnet_id" {
   description = "Subnet OCID for the public Kubernetes API endpoint."
+  type        = string
+}
+
+variable "api_subnet_cidr" {
+  description = "Subnet CIDR for the Kubernetes API endpoint."
   type        = string
 }
 
@@ -29,7 +39,12 @@ variable "lb_subnet_id" {
 }
 
 variable "nodes_subnet_id" {
-  description = "Private subnet OCID for worker nodes."
+  description = "Subnet OCID for worker nodes."
+  type        = string
+}
+
+variable "nodes_subnet_cidr" {
+  description = "Subnet CIDR for worker nodes."
   type        = string
 }
 

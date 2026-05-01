@@ -24,7 +24,7 @@ variable "lb_subnet_cidr" {
 }
 
 variable "nodes_subnet_cidr" {
-  description = "Private subnet CIDR for worker nodes."
+  description = "Public subnet CIDR for worker nodes."
   type        = string
 }
 

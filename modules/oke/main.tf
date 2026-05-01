@@ -21,11 +21,92 @@ resource "oci_core_network_security_group_security_rule" "control_plane_api" {
   }
 }
 
+resource "oci_core_network_security_group_security_rule" "control_plane_worker_api" {
+  for_each                  = toset(["6443", "12250"])
+  network_security_group_id = oci_core_network_security_group.control_plane.id
+  direction                 = "INGRESS"
+  protocol                  = "6"
+  source                    = var.nodes_subnet_cidr
+  source_type               = "CIDR_BLOCK"
+
+  tcp_options {
+    destination_port_range {
+      min = tonumber(each.value)
+      max = tonumber(each.value)
+    }
+  }
+}
+
+resource "oci_core_network_security_group_security_rule" "control_plane_icmp_path_discovery" {
+  network_security_group_id = oci_core_network_security_group.control_plane.id
+  direction                 = "INGRESS"
+  protocol                  = "1"
+  source                    = var.nodes_subnet_cidr
+  source_type               = "CIDR_BLOCK"
+
+  icmp_options {
+    type = 3
+    code = 4
+  }
+}
+
+resource "oci_core_network_security_group_security_rule" "control_plane_egress" {
+  network_security_group_id = oci_core_network_security_group.control_plane.id
+  direction                 = "EGRESS"
+  protocol                  = "all"
+  destination               = var.vcn_cidr
+  destination_type          = "CIDR_BLOCK"
+}
+
 resource "oci_core_network_security_group" "nodes" {
   compartment_id = var.compartment_ocid
   vcn_id         = var.vcn_id
   display_name   = "${var.cluster_name}-nsg-nodes"
   freeform_tags  = var.freeform_tags
+}
+
+resource "oci_core_network_security_group_security_rule" "nodes_egress" {
+  network_security_group_id = oci_core_network_security_group.nodes.id
+  direction                 = "EGRESS"
+  protocol                  = "all"
+  destination               = "0.0.0.0/0"
+  destination_type          = "CIDR_BLOCK"
+}
+
+resource "oci_core_network_security_group_security_rule" "nodes_ingress_vcn" {
+  network_security_group_id = oci_core_network_security_group.nodes.id
+  direction                 = "INGRESS"
+  protocol                  = "all"
+  source                    = var.nodes_subnet_cidr
+  source_type               = "CIDR_BLOCK"
+}
+
+resource "oci_core_network_security_group_security_rule" "nodes_ingress_control_plane" {
+  network_security_group_id = oci_core_network_security_group.nodes.id
+  direction                 = "INGRESS"
+  protocol                  = "6"
+  source                    = var.api_subnet_cidr
+  source_type               = "CIDR_BLOCK"
+
+  tcp_options {
+    destination_port_range {
+      min = 1
+      max = 65535
+    }
+  }
+}
+
+resource "oci_core_network_security_group_security_rule" "nodes_ingress_icmp_path_discovery" {
+  network_security_group_id = oci_core_network_security_group.nodes.id
+  direction                 = "INGRESS"
+  protocol                  = "1"
+  source                    = "0.0.0.0/0"
+  source_type               = "CIDR_BLOCK"
+
+  icmp_options {
+    type = 3
+    code = 4
+  }
 }
 
 resource "oci_containerengine_cluster" "this" {
