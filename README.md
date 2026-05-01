@@ -15,7 +15,7 @@ The goal is to provide composable, documented modules for Kubernetes labs and sm
 ## Planned Modules
 
 - `foundation`: compartments, common tags, IAM helpers, and cost guardrails.
-- `network`: VCN, public/private subnets, gateways, route tables, NSGs.
+- `network`: VCN, public API/LB/node subnets, Internet Gateway, Service Gateway, route tables, NSGs.
 - `dns`: OCI public DNS zones and outputs for registrar delegation.
 - `oke`: OKE Basic cluster and A1 Flex worker pools.
 - `platform`: cert-manager, external-dns, Istio ambient, Gateway API, and wildcard ingress.
