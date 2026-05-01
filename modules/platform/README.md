@@ -12,6 +12,8 @@ Installs the shared Kubernetes platform layer for an OCI OKE cluster.
 - Istio ambient mode
 - public Istio ingress gateway backed by an OCI Network Load Balancer
 - optional wildcard TLS certificate and HTTPS Gateway listener
+- optional shared ambient waypoint in the Istio root namespace
+- optional Istio Bookinfo sample in the `default` namespace
 
 ## Inputs
 
@@ -49,3 +51,19 @@ records in the target zone, typically through instance principal policies.
 The module returns the Gateway name, Gateway namespace, Istio namespace, Gateway
 Service name, and wildcard secret name so root modules can wire DNS records and
 observability routes.
+
+## Central waypoint
+
+Set `enable_central_egress_waypoint=true` to create a shared waypoint Gateway in
+`istio-system`. Namespaces listed in `central_egress_waypoint_namespaces` are
+labeled for ambient mode and configured to use the cross-namespace waypoint.
+
+This follows the Istio ambient waypoint model: the waypoint is a Kubernetes
+Gateway with `gatewayClassName: istio-waypoint`, and enrolled namespaces use the
+`istio.io/use-waypoint` and `istio.io/use-waypoint-namespace` labels.
+
+## Bookinfo sample
+
+Set `enable_bookinfo_sample=true` to install the Istio Bookinfo lab application
+in the `default` namespace. The sample is internal-only: it creates ClusterIP
+services and deployments, but no public Gateway route or LoadBalancer.

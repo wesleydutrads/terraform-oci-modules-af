@@ -1,8 +1,8 @@
 locals {
-  kubeconfig_path               = pathexpand(var.kubeconfig_path)
-  istio_namespace               = "istio-system"
-  wildcard_secret_name          = "wildcard-${replace(var.domain_name, ".", "-")}-tls"
-  letsencrypt_prod_manifest     = <<-YAML
+  kubeconfig_path                  = pathexpand(var.kubeconfig_path)
+  istio_namespace                  = "istio-system"
+  wildcard_secret_name             = "wildcard-${replace(var.domain_name, ".", "-")}-tls"
+  letsencrypt_prod_manifest        = <<-YAML
     apiVersion: cert-manager.io/v1
     kind: ClusterIssuer
     metadata:
@@ -25,7 +25,7 @@ locals {
                   compartmentOCID: ${var.compartment_ocid}
                   region: ${var.region}
     YAML
-  wildcard_certificate_manifest = <<-YAML
+  wildcard_certificate_manifest    = <<-YAML
     apiVersion: cert-manager.io/v1
     kind: Certificate
     metadata:
@@ -40,7 +40,7 @@ locals {
         - ${var.domain_name}
         - "*.${var.domain_name}"
     YAML
-  public_gateway_manifest       = <<-YAML
+  public_gateway_manifest          = <<-YAML
     apiVersion: gateway.networking.k8s.io/v1
     kind: Gateway
     metadata:
@@ -77,13 +77,340 @@ locals {
               from: All
 %{endif~}
     YAML
-  public_gateway_options        = <<-YAML
+  public_gateway_options           = <<-YAML
     service: |
       spec:
         loadBalancerSourceRanges:
 %{for cidr in var.public_gateway_allowed_cidrs~}
           - ${cidr}
 %{endfor~}
+    YAML
+  central_egress_waypoint_manifest = <<-YAML
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: Gateway
+    metadata:
+      name: ${var.central_egress_waypoint_name}
+      namespace: ${local.istio_namespace}
+      labels:
+        istio.io/waypoint-for: ${var.central_egress_waypoint_for}
+    spec:
+      gatewayClassName: istio-waypoint
+      listeners:
+        - name: mesh
+          port: 15008
+          protocol: HBONE
+          allowedRoutes:
+            namespaces:
+              from: All
+    YAML
+  bookinfo_manifest                = <<-YAML
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: details
+      namespace: default
+      labels:
+        app: details
+        service: details
+    spec:
+      ports:
+        - port: 9080
+          name: http
+      selector:
+        app: details
+    ---
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: ratings
+      namespace: default
+      labels:
+        app: ratings
+        service: ratings
+    spec:
+      ports:
+        - port: 9080
+          name: http
+      selector:
+        app: ratings
+    ---
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: reviews
+      namespace: default
+      labels:
+        app: reviews
+        service: reviews
+    spec:
+      ports:
+        - port: 9080
+          name: http
+      selector:
+        app: reviews
+    ---
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: productpage
+      namespace: default
+      labels:
+        app: productpage
+        service: productpage
+    spec:
+      ports:
+        - port: 9080
+          name: http
+      selector:
+        app: productpage
+    ---
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: bookinfo-details
+      namespace: default
+      labels:
+        account: details
+    ---
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: details-v1
+      namespace: default
+      labels:
+        app: details
+        version: v1
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: details
+          version: v1
+      template:
+        metadata:
+          labels:
+            app: details
+            version: v1
+        spec:
+          serviceAccountName: bookinfo-details
+          containers:
+            - name: details
+              image: docker.io/istio/examples-bookinfo-details-v1:1.20.3
+              imagePullPolicy: IfNotPresent
+              ports:
+                - containerPort: 9080
+              securityContext:
+                runAsUser: 1000
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+                limits:
+                  memory: 128Mi
+    ---
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: bookinfo-ratings
+      namespace: default
+      labels:
+        account: ratings
+    ---
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: ratings-v1
+      namespace: default
+      labels:
+        app: ratings
+        version: v1
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: ratings
+          version: v1
+      template:
+        metadata:
+          labels:
+            app: ratings
+            version: v1
+        spec:
+          serviceAccountName: bookinfo-ratings
+          containers:
+            - name: ratings
+              image: docker.io/istio/examples-bookinfo-ratings-v1:1.20.3
+              imagePullPolicy: IfNotPresent
+              ports:
+                - containerPort: 9080
+              securityContext:
+                runAsUser: 1000
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+                limits:
+                  memory: 128Mi
+    ---
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: bookinfo-reviews
+      namespace: default
+      labels:
+        account: reviews
+    ---
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: reviews-v1
+      namespace: default
+      labels:
+        app: reviews
+        version: v1
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: reviews
+          version: v1
+      template:
+        metadata:
+          labels:
+            app: reviews
+            version: v1
+        spec:
+          serviceAccountName: bookinfo-reviews
+          containers:
+            - name: reviews
+              image: docker.io/istio/examples-bookinfo-reviews-v1:1.20.3
+              imagePullPolicy: IfNotPresent
+              ports:
+                - containerPort: 9080
+              securityContext:
+                runAsUser: 1000
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 128Mi
+                limits:
+                  memory: 512Mi
+    ---
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: reviews-v2
+      namespace: default
+      labels:
+        app: reviews
+        version: v2
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: reviews
+          version: v2
+      template:
+        metadata:
+          labels:
+            app: reviews
+            version: v2
+        spec:
+          serviceAccountName: bookinfo-reviews
+          containers:
+            - name: reviews
+              image: docker.io/istio/examples-bookinfo-reviews-v2:1.20.3
+              imagePullPolicy: IfNotPresent
+              ports:
+                - containerPort: 9080
+              securityContext:
+                runAsUser: 1000
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 64Mi
+                limits:
+                  memory: 256Mi
+    ---
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: reviews-v3
+      namespace: default
+      labels:
+        app: reviews
+        version: v3
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: reviews
+          version: v3
+      template:
+        metadata:
+          labels:
+            app: reviews
+            version: v3
+        spec:
+          serviceAccountName: bookinfo-reviews
+          containers:
+            - name: reviews
+              image: docker.io/istio/examples-bookinfo-reviews-v3:1.20.3
+              imagePullPolicy: IfNotPresent
+              ports:
+                - containerPort: 9080
+              securityContext:
+                runAsUser: 1000
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 64Mi
+                limits:
+                  memory: 256Mi
+    ---
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: bookinfo-productpage
+      namespace: default
+      labels:
+        account: productpage
+    ---
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: productpage-v1
+      namespace: default
+      labels:
+        app: productpage
+        version: v1
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: productpage
+          version: v1
+      template:
+        metadata:
+          labels:
+            app: productpage
+            version: v1
+        spec:
+          serviceAccountName: bookinfo-productpage
+          containers:
+            - name: productpage
+              image: docker.io/istio/examples-bookinfo-productpage-v1:1.20.3
+              imagePullPolicy: IfNotPresent
+              ports:
+                - containerPort: 9080
+              securityContext:
+                runAsUser: 1000
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 128Mi
+                limits:
+                  memory: 512Mi
     YAML
 }
 
@@ -341,4 +668,70 @@ resource "null_resource" "public_gateway" {
     kubernetes_config_map_v1.public_gateway_options,
     null_resource.wait_wildcard_certificate
   ]
+}
+
+resource "null_resource" "central_egress_waypoint" {
+  count = var.enabled && var.enable_istio_ambient && var.enable_central_egress_waypoint ? 1 : 0
+
+  triggers = {
+    manifest_sha    = sha1(local.central_egress_waypoint_manifest)
+    name            = var.central_egress_waypoint_name
+    namespace       = local.istio_namespace
+    kubectl_path    = var.kubectl_path
+    kubeconfig_path = local.kubeconfig_path
+  }
+
+  provisioner "local-exec" {
+    command = "${var.kubectl_path} --kubeconfig=${local.kubeconfig_path} apply -f - <<'YAML'\n${local.central_egress_waypoint_manifest}\nYAML"
+  }
+
+  provisioner "local-exec" {
+    when    = destroy
+    command = "${self.triggers.kubectl_path} --kubeconfig=${self.triggers.kubeconfig_path} delete gateway ${self.triggers.name} -n ${self.triggers.namespace} --ignore-not-found"
+  }
+
+  depends_on = [
+    null_resource.gateway_api_crds,
+    helm_release.istiod
+  ]
+}
+
+resource "kubernetes_labels" "central_egress_waypoint_namespaces" {
+  for_each = var.enabled && var.enable_istio_ambient && var.enable_central_egress_waypoint ? toset(var.central_egress_waypoint_namespaces) : toset([])
+
+  api_version = "v1"
+  kind        = "Namespace"
+  force       = true
+
+  metadata {
+    name = each.value
+  }
+
+  labels = {
+    "istio.io/dataplane-mode"         = "ambient"
+    "istio.io/use-waypoint"           = var.central_egress_waypoint_name
+    "istio.io/use-waypoint-namespace" = local.istio_namespace
+  }
+
+  depends_on = [null_resource.central_egress_waypoint]
+}
+
+resource "null_resource" "bookinfo_sample" {
+  count = var.enabled && var.enable_bookinfo_sample ? 1 : 0
+
+  triggers = {
+    manifest_sha   = sha1(local.bookinfo_manifest)
+    delete_command = "${var.kubectl_path} --kubeconfig=${local.kubeconfig_path} delete service productpage reviews ratings details -n default --ignore-not-found && ${var.kubectl_path} --kubeconfig=${local.kubeconfig_path} delete deployment productpage-v1 reviews-v1 reviews-v2 reviews-v3 ratings-v1 details-v1 -n default --ignore-not-found && ${var.kubectl_path} --kubeconfig=${local.kubeconfig_path} delete serviceaccount bookinfo-productpage bookinfo-reviews bookinfo-ratings bookinfo-details -n default --ignore-not-found"
+  }
+
+  provisioner "local-exec" {
+    command = "${var.kubectl_path} --kubeconfig=${local.kubeconfig_path} apply -f - <<'YAML'\n${local.bookinfo_manifest}\nYAML"
+  }
+
+  provisioner "local-exec" {
+    when    = destroy
+    command = self.triggers.delete_command
+  }
+
+  depends_on = [kubernetes_labels.central_egress_waypoint_namespaces]
 }

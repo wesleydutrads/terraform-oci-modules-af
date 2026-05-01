@@ -95,6 +95,41 @@ variable "enable_public_ingress_gateway" {
   default     = true
 }
 
+variable "enable_central_egress_waypoint" {
+  description = "Create a shared ambient waypoint in the Istio root namespace and enroll selected namespaces to use it."
+  type        = bool
+  default     = false
+}
+
+variable "central_egress_waypoint_name" {
+  description = "Name of the shared ambient waypoint Gateway."
+  type        = string
+  default     = "egress-waypoint"
+}
+
+variable "central_egress_waypoint_for" {
+  description = "Waypoint traffic type. Supported values are service, workload, all, or none."
+  type        = string
+  default     = "all"
+
+  validation {
+    condition     = contains(["service", "workload", "all", "none"], var.central_egress_waypoint_for)
+    error_message = "central_egress_waypoint_for must be service, workload, all, or none."
+  }
+}
+
+variable "central_egress_waypoint_namespaces" {
+  description = "Namespaces enrolled to use the shared ambient waypoint."
+  type        = list(string)
+  default     = ["default"]
+}
+
+variable "enable_bookinfo_sample" {
+  description = "Deploy the official Istio Bookinfo sample into the default namespace for labs."
+  type        = bool
+  default     = false
+}
+
 variable "public_gateway_allowed_cidrs" {
   description = "CIDRs allowed to reach the public ingress gateway."
   type        = list(string)

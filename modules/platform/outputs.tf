@@ -22,3 +22,23 @@ output "gateway_service_name" {
   description = "Istio-managed LoadBalancer Service name for the public Gateway."
   value       = "public-istio"
 }
+
+output "central_egress_waypoint_name" {
+  description = "Shared ambient waypoint name."
+  value       = var.enable_central_egress_waypoint ? var.central_egress_waypoint_name : null
+}
+
+output "central_egress_waypoint_namespace" {
+  description = "Shared ambient waypoint namespace."
+  value       = var.enable_central_egress_waypoint ? local.istio_namespace : null
+}
+
+output "central_egress_waypoint_namespaces" {
+  description = "Namespaces enrolled to use the shared ambient waypoint."
+  value       = var.enable_central_egress_waypoint ? var.central_egress_waypoint_namespaces : []
+}
+
+output "bookinfo_namespace" {
+  description = "Namespace where Bookinfo is deployed."
+  value       = var.enable_bookinfo_sample ? "default" : null
+}
