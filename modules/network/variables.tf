@@ -28,6 +28,12 @@ variable "nodes_subnet_cidr" {
   type        = string
 }
 
+variable "db_subnet_cidr" {
+  description = "Optional private subnet CIDR for managed databases."
+  type        = string
+  default     = null
+}
+
 variable "api_allowed_cidrs" {
   description = "CIDRs allowed to reach the Kubernetes API endpoint."
   type        = list(string)

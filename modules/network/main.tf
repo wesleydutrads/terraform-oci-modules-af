@@ -149,6 +149,38 @@ resource "oci_core_security_list" "nodes" {
   }
 }
 
+resource "oci_core_security_list" "database" {
+  count = var.db_subnet_cidr != null ? 1 : 0
+
+  compartment_id = var.compartment_ocid
+  vcn_id         = oci_core_vcn.this.id
+  display_name   = "${var.name_prefix}-sl-db"
+  freeform_tags  = var.freeform_tags
+
+  egress_security_rules {
+    destination = var.vcn_cidr
+    protocol    = "all"
+  }
+
+  ingress_security_rules {
+    source   = var.vcn_cidr
+    protocol = "6"
+    tcp_options {
+      min = 3306
+      max = 3306
+    }
+  }
+
+  ingress_security_rules {
+    source   = var.vcn_cidr
+    protocol = "6"
+    tcp_options {
+      min = 33060
+      max = 33060
+    }
+  }
+}
+
 resource "oci_core_subnet" "api" {
   compartment_id             = var.compartment_ocid
   vcn_id                     = oci_core_vcn.this.id
@@ -182,5 +214,19 @@ resource "oci_core_subnet" "nodes" {
   security_list_ids          = [oci_core_security_list.nodes.id]
   prohibit_public_ip_on_vnic = false
   dns_label                  = "nodesubnet"
+  freeform_tags              = var.freeform_tags
+}
+
+resource "oci_core_subnet" "database" {
+  count = var.db_subnet_cidr != null ? 1 : 0
+
+  compartment_id             = var.compartment_ocid
+  vcn_id                     = oci_core_vcn.this.id
+  display_name               = "${var.name_prefix}-subnet-db"
+  cidr_block                 = var.db_subnet_cidr
+  route_table_id             = oci_core_route_table.private.id
+  security_list_ids          = [oci_core_security_list.database[0].id]
+  prohibit_public_ip_on_vnic = true
+  dns_label                  = "dbsubnet"
   freeform_tags              = var.freeform_tags
 }
