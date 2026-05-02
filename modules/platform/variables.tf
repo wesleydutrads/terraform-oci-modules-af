@@ -72,9 +72,15 @@ variable "enable_external_dns" {
 }
 
 variable "external_dns_sources" {
-  description = "external-dns sources. Keep gateway-httproute disabled unless private Gateway addresses are filtered elsewhere."
+  description = "external-dns sources. Include gateway-httproute when the public Gateway has external-dns target annotation."
   type        = list(string)
-  default     = ["service"]
+  default     = ["service", "gateway-httproute"]
+}
+
+variable "external_dns_chart_version" {
+  description = "external-dns Helm chart version."
+  type        = string
+  default     = "1.21.1"
 }
 
 variable "enable_metrics_server" {
@@ -128,6 +134,18 @@ variable "enable_bookinfo_sample" {
   description = "Deploy the official Istio Bookinfo sample into the default namespace for labs."
   type        = bool
   default     = false
+}
+
+variable "enable_bookinfo_route" {
+  description = "Create a public HTTPRoute for the Bookinfo productpage service."
+  type        = bool
+  default     = false
+}
+
+variable "bookinfo_host" {
+  description = "Optional public hostname for Bookinfo. Defaults to bookinfo.<domain_name>."
+  type        = string
+  default     = null
 }
 
 variable "public_gateway_allowed_cidrs" {

@@ -49,8 +49,16 @@ records in the target zone, typically through instance principal policies.
 ## Outputs
 
 The module returns the Gateway name, Gateway namespace, Istio namespace, Gateway
-Service name, and wildcard secret name so root modules can wire DNS records and
-observability routes.
+Service name, wildcard secret name, and optional Bookinfo URL so root modules
+can wire DNS records and observability routes.
+
+## ExternalDNS and HTTPRoutes
+
+By default, `external_dns_sources=["service", "gateway-httproute"]`. The root
+module should annotate the public Gateway with
+`external-dns.alpha.kubernetes.io/target=<public-nlb-ip>` when OCI reports both
+private and public Gateway addresses. Application HTTPRoutes can then create DNS
+records automatically.
 
 ## Central waypoint
 
@@ -79,8 +87,9 @@ flowchart LR
 ```
 
 Set `enable_bookinfo_sample=true` to install the Istio Bookinfo lab application
-in the `default` namespace. The sample is internal-only: it creates ClusterIP
-services and deployments, but no public Gateway route or LoadBalancer.
+in the `default` namespace. Set `enable_bookinfo_route=true` to publish
+`https://bookinfo.<domain>/productpage` through the shared Gateway without
+creating a separate LoadBalancer.
 
 ## Related Documents
 
@@ -95,4 +104,5 @@ services and deployments, but no public Gateway route or LoadBalancer.
 - [Istio ambient waypoint proxies](https://istio.io/latest/docs/ambient/usage/waypoint/)
 - [Istio Bookinfo sample](https://istio.io/latest/docs/examples/bookinfo/)
 - [Gateway API](https://gateway-api.sigs.k8s.io/)
+- [ExternalDNS Gateway API source](https://kubernetes-sigs.github.io/external-dns/v0.21.0/docs/sources/gateway-api/)
 - [cert-manager DNS01 webhook solver](https://cert-manager.io/docs/configuration/acme/dns01/webhook/)

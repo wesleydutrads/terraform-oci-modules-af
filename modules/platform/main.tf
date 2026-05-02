@@ -2,6 +2,7 @@ locals {
   kubeconfig_path                  = pathexpand(var.kubeconfig_path)
   istio_namespace                  = "istio-system"
   wildcard_secret_name             = "wildcard-${replace(var.domain_name, ".", "-")}-tls"
+  bookinfo_host                    = coalesce(var.bookinfo_host, "bookinfo.${var.domain_name}")
   letsencrypt_prod_manifest        = <<-YAML
     apiVersion: cert-manager.io/v1
     kind: ClusterIssuer
@@ -412,6 +413,48 @@ locals {
                 limits:
                   memory: 512Mi
     YAML
+  bookinfo_route_manifest          = <<-YAML
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    metadata:
+      name: bookinfo
+      namespace: default
+      annotations:
+        external-dns.alpha.kubernetes.io/ttl: "60"
+    spec:
+      parentRefs:
+        - name: public
+          namespace: ${local.istio_namespace}
+      hostnames:
+        - ${local.bookinfo_host}
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /
+          backendRefs:
+            - name: productpage
+              port: 9080
+    YAML
+  bookinfo_service_entry_manifest  = <<-YAML
+    apiVersion: networking.istio.io/v1
+    kind: ServiceEntry
+    metadata:
+      name: bookinfo-public-host
+      namespace: default
+    spec:
+      hosts:
+        - ${local.bookinfo_host}
+      location: MESH_EXTERNAL
+      ports:
+        - number: 80
+          name: http
+          protocol: HTTP
+        - number: 443
+          name: https
+          protocol: HTTPS
+      resolution: DNS
+    YAML
 }
 
 resource "null_resource" "gateway_api_crds" {
@@ -496,21 +539,34 @@ resource "helm_release" "external_dns" {
   repository = "https://kubernetes-sigs.github.io/external-dns/"
   chart      = "external-dns"
   namespace  = "kube-system"
-  version    = "1.15.2"
+  version    = var.external_dns_chart_version
 
   values = [
     yamlencode({
-      provider = "oci"
-      policy   = "sync"
-      sources  = var.external_dns_sources
+      provider = {
+        name = "oci"
+      }
+      policy           = "sync"
+      sources          = var.external_dns_sources
+      gatewayNamespace = local.istio_namespace
       domainFilters = [
         var.domain_name
       ]
       extraArgs = [
         "--oci-auth-instance-principal",
         "--oci-compartment-ocid=${var.compartment_ocid}",
-        "--oci-zone-scope=GLOBAL"
+        "--oci-zone-scope=GLOBAL",
+        "--gateway-name=public"
       ]
+      resources = {
+        requests = {
+          cpu    = "10m"
+          memory = "64Mi"
+        }
+        limits = {
+          memory = "128Mi"
+        }
+      }
     })
   ]
 }
@@ -734,4 +790,50 @@ resource "null_resource" "bookinfo_sample" {
   }
 
   depends_on = [kubernetes_labels.central_egress_waypoint_namespaces]
+}
+
+resource "null_resource" "bookinfo_route" {
+  count = var.enabled && var.enable_bookinfo_sample && var.enable_bookinfo_route ? 1 : 0
+
+  triggers = {
+    manifest_sha    = sha1(local.bookinfo_route_manifest)
+    name            = "bookinfo"
+    namespace       = "default"
+    kubectl_path    = var.kubectl_path
+    kubeconfig_path = local.kubeconfig_path
+  }
+
+  provisioner "local-exec" {
+    command = "${var.kubectl_path} --kubeconfig=${local.kubeconfig_path} apply -f - <<'YAML'\n${local.bookinfo_route_manifest}\nYAML"
+  }
+
+  provisioner "local-exec" {
+    when    = destroy
+    command = "${self.triggers.kubectl_path} --kubeconfig=${self.triggers.kubeconfig_path} delete httproute ${self.triggers.name} -n ${self.triggers.namespace} --ignore-not-found"
+  }
+
+  depends_on = [null_resource.public_gateway, null_resource.bookinfo_sample]
+}
+
+resource "null_resource" "bookinfo_public_host_service_entry" {
+  count = var.enabled && var.enable_bookinfo_sample && var.enable_bookinfo_route ? 1 : 0
+
+  triggers = {
+    manifest_sha    = sha1(local.bookinfo_service_entry_manifest)
+    name            = "bookinfo-public-host"
+    namespace       = "default"
+    kubectl_path    = var.kubectl_path
+    kubeconfig_path = local.kubeconfig_path
+  }
+
+  provisioner "local-exec" {
+    command = "${var.kubectl_path} --kubeconfig=${local.kubeconfig_path} apply -f - <<'YAML'\n${local.bookinfo_service_entry_manifest}\nYAML"
+  }
+
+  provisioner "local-exec" {
+    when    = destroy
+    command = "${self.triggers.kubectl_path} --kubeconfig=${self.triggers.kubeconfig_path} delete serviceentry ${self.triggers.name} -n ${self.triggers.namespace} --ignore-not-found"
+  }
+
+  depends_on = [null_resource.bookinfo_route]
 }

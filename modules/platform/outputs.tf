@@ -42,3 +42,13 @@ output "bookinfo_namespace" {
   description = "Namespace where Bookinfo is deployed."
   value       = var.enable_bookinfo_sample ? "default" : null
 }
+
+output "bookinfo_host" {
+  description = "Public Bookinfo hostname when the route is enabled."
+  value       = var.enable_bookinfo_sample && var.enable_bookinfo_route ? local.bookinfo_host : null
+}
+
+output "bookinfo_url" {
+  description = "Public Bookinfo URL when the route is enabled."
+  value       = var.enable_bookinfo_sample && var.enable_bookinfo_route ? "https://${local.bookinfo_host}/productpage" : null
+}
