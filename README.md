@@ -20,6 +20,7 @@ The goal is to provide composable, documented modules for Kubernetes labs and sm
 - [`oke`](modules/oke/): OKE Basic cluster and A1 Flex worker pools.
 - [`platform`](modules/platform/): cert-manager, external-dns, Istio ambient, Gateway API, wildcard ingress, waypoint, and Bookinfo.
 - [`observability`](modules/observability/): Kiali, Prometheus/Grafana, Loki, Tempo, and protected routes.
+- [`argocd`](modules/argocd/): Argo CD GitOps delivery exposed through the shared Gateway.
 - [`object-storage`](modules/object-storage/): buckets and S3-compatible credentials for logs and traces.
 - [`registry`](modules/registry/): OCI Container Registry repositories and IAM policies.
 - [`admin-box`](modules/admin-box/): optional E2.1.Micro administration VM.
