@@ -1,8 +1,13 @@
 resource "random_password" "mysql_admin" {
   count = var.enable_mysql_heatwave && var.mysql_admin_password == null ? 1 : 0
 
-  length  = 24
-  special = false
+  length           = 24
+  special          = true
+  override_special = "#_-"
+  min_lower        = 1
+  min_upper        = 1
+  min_numeric      = 1
+  min_special      = 1
 }
 
 locals {
@@ -23,11 +28,6 @@ resource "oci_mysql_mysql_db_system" "always_free" {
   description             = "Always Free MySQL DB system for Kubernetes platform applications."
   is_highly_available     = false
   freeform_tags           = var.freeform_tags
-
-  backup_policy {
-    is_enabled        = var.mysql_backup_enabled
-    retention_in_days = var.mysql_backup_enabled ? 7 : 1
-  }
 
   deletion_policy {
     final_backup = "SKIP_FINAL_BACKUP"

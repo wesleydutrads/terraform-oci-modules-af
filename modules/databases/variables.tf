@@ -64,7 +64,7 @@ variable "mysql_storage_size_gb" {
 }
 
 variable "mysql_backup_enabled" {
-  description = "Enable MySQL automatic backups. Disabled by default to avoid unexpected paid usage."
+  description = "Reserved for future paid MySQL profiles. Always Free backup policy is fixed by OCI and is not set by this module."
   type        = bool
   default     = false
 }
