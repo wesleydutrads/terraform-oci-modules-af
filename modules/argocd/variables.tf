@@ -65,3 +65,16 @@ variable "admin_enabled" {
   type        = bool
   default     = true
 }
+
+variable "oidc" {
+  description = "Optional OIDC configuration for Argo CD."
+  type = object({
+    issuer_url     = string
+    client_id      = string
+    client_secret  = string
+    admin_group    = optional(string, "platform-admins")
+    readonly_group = optional(string, "platform-readonly")
+  })
+  default   = null
+  sensitive = true
+}

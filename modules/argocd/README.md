@@ -10,6 +10,7 @@ API Gateway.
 - HTTPRoute for `argocd.<domain>`
 - ServiceEntry for the public Argo CD hostname
 - resource requests and limits tuned for small Always Free clusters
+- optional OIDC configuration for Keycloak SSO
 
 ## Access Flow
 
@@ -50,6 +51,12 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 
 After the Keycloak module is enabled, Argo CD should move to OIDC and the
 built-in admin account can be disabled.
+
+## OIDC
+
+Pass `oidc` with the Keycloak issuer URL, `argocd` client ID, and client secret
+to enable SSO. The module maps `platform-admins` to `role:admin` and
+`platform-readonly` to `role:readonly` by default.
 
 ## Related Documents
 

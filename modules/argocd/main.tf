@@ -1,5 +1,6 @@
 locals {
   kubeconfig_path = pathexpand(var.kubeconfig_path)
+  oidc_enabled    = var.oidc != null
 
   route_manifest = <<-YAML
     apiVersion: gateway.networking.k8s.io/v1
@@ -73,9 +74,35 @@ resource "helm_release" "this" {
         params = {
           "server.insecure" = true
         }
-        cm = {
+        cm = merge({
           "admin.enabled" = tostring(var.admin_enabled)
-        }
+          url             = "https://${var.host}"
+          }, local.oidc_enabled ? {
+          "oidc.config" = yamlencode({
+            name         = "Keycloak"
+            issuer       = var.oidc.issuer_url
+            clientID     = var.oidc.client_id
+            clientSecret = "$oidc.keycloak.clientSecret"
+            requestedScopes = [
+              "openid",
+              "profile",
+              "email",
+              "groups"
+            ]
+          })
+        } : {})
+        rbac = local.oidc_enabled ? {
+          "policy.csv" = <<-CSV
+            g, ${var.oidc.admin_group}, role:admin
+            g, ${var.oidc.readonly_group}, role:readonly
+          CSV
+          "scopes"     = "[groups]"
+        } : {}
+        secret = local.oidc_enabled ? {
+          extra = {
+            "oidc.keycloak.clientSecret" = var.oidc.client_secret
+          }
+        } : {}
       }
       server = {
         extraArgs = ["--insecure"]

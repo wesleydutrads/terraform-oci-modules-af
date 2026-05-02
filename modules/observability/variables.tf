@@ -59,9 +59,24 @@ variable "kiali_auth_strategy" {
   default     = "token"
 
   validation {
-    condition     = contains(["anonymous", "token"], var.kiali_auth_strategy)
-    error_message = "Supported Kiali auth strategies in this module are anonymous and token."
+    condition     = contains(["anonymous", "token", "openid"], var.kiali_auth_strategy)
+    error_message = "Supported Kiali auth strategies in this module are anonymous, token, and openid."
   }
+}
+
+variable "oidc" {
+  description = "Optional OIDC configuration shared by Grafana and Kiali."
+  type = object({
+    issuer_url            = string
+    grafana_client_id     = string
+    grafana_client_secret = string
+    kiali_client_id       = string
+    kiali_client_secret   = string
+    admin_group           = optional(string, "platform-admins")
+    readonly_group        = optional(string, "platform-readonly")
+  })
+  default   = null
+  sensitive = true
 }
 
 variable "istio_root_namespace" {

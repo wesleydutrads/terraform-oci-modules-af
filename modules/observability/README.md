@@ -15,6 +15,7 @@ Gateway API Gateway.
 - ServiceEntry for public dashboard hostnames to keep Istio/Kiali validation clean
 - admin and read-only ServiceAccounts for Kiali token login
 - optional Grafana anonymous Viewer mode
+- optional Keycloak/OIDC configuration for Grafana and Kiali
 
 ## Storage
 
@@ -104,6 +105,13 @@ can be provided through anonymous Viewer mode. When the optional Gateway token
 policy is enabled, the request must pass that policy before reaching Grafana,
 Kiali, or tracing.
 
+## OIDC
+
+When the Keycloak module is enabled, pass the issuer URL and client secrets
+through `oidc`. Grafana uses generic OAuth. Kiali can use
+`kiali_auth_strategy="openid"` with the same issuer; in this mode the module
+creates the required `kiali` secret containing `oidc-secret`.
+
 ## Related Documents
 
 - [Module library README](../../README.md)
@@ -116,6 +124,7 @@ Kiali, or tracing.
 ## References
 
 - [Kiali token authentication](https://kiali.io/docs/configuration/authentication/token/)
+- [Kiali OpenID Connect authentication](https://kiali.io/docs/configuration/authentication/openid/)
 - [Kiali architecture](https://kiali.io/docs/architecture/architecture/)
 - [Grafana provisioning](https://grafana.com/docs/grafana/latest/administration/provisioning/)
 - [Grafana Loki storage](https://grafana.com/docs/loki/latest/configure/storage/)

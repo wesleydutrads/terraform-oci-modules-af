@@ -6,6 +6,7 @@ locals {
   public_hosts                       = distinct([var.hosts.kiali, var.hosts.grafana, local.tracing_host])
   public_hosts_policy                = join("\n", [for host in local.public_hosts : "                  - ${host}"])
   public_hosts_service_entry         = join("\n", [for host in local.public_hosts : "        - ${host}"])
+  oidc_enabled                       = var.oidc != null
   token_policy_manifest              = <<-YAML
     apiVersion: security.istio.io/v1
     kind: AuthorizationPolicy
@@ -142,6 +143,18 @@ resource "helm_release" "prometheus_stack" {
             org_name = "Main Org."
             org_role = "Viewer"
           }
+          "auth.generic_oauth" = local.oidc_enabled ? {
+            enabled             = true
+            name                = "Keycloak"
+            allow_sign_up       = true
+            client_id           = var.oidc.grafana_client_id
+            client_secret       = var.oidc.grafana_client_secret
+            scopes              = "openid profile email groups"
+            auth_url            = "${var.oidc.issuer_url}/protocol/openid-connect/auth"
+            token_url           = "${var.oidc.issuer_url}/protocol/openid-connect/token"
+            api_url             = "${var.oidc.issuer_url}/protocol/openid-connect/userinfo"
+            role_attribute_path = "contains(groups[*], '${var.oidc.admin_group}') && 'Admin' || contains(groups[*], '${var.oidc.readonly_group}') && 'Viewer' || 'Viewer'"
+          } : {}
           users = {
             viewers_can_edit = false
           }
@@ -403,9 +416,17 @@ resource "helm_release" "kiali" {
 
   values = [
     yamlencode({
-      auth = {
+      auth = merge({
         strategy = var.kiali_auth_strategy
-      }
+        }, local.oidc_enabled && var.kiali_auth_strategy == "openid" ? {
+        openid = {
+          client_id      = var.oidc.kiali_client_id
+          issuer_uri     = var.oidc.issuer_url
+          scopes         = ["openid", "profile", "email", "groups"]
+          username_claim = "preferred_username"
+          disable_rbac   = true
+        }
+      } : {})
       external_services = {
         prometheus = {
           url = "http://monitoring-kube-prometheus-prometheus.${var.namespace}.svc:9090"
@@ -433,6 +454,24 @@ resource "helm_release" "kiali" {
       }
     })
   ]
+
+  depends_on = [kubernetes_secret_v1.kiali_oidc]
+}
+
+resource "kubernetes_secret_v1" "kiali_oidc" {
+  count = var.enabled && var.enable_kiali && local.oidc_enabled && var.kiali_auth_strategy == "openid" ? 1 : 0
+
+  metadata {
+    name      = "kiali"
+    namespace = kubernetes_namespace_v1.this[0].metadata[0].name
+    labels = {
+      app = "kiali"
+    }
+  }
+
+  data = {
+    oidc-secret = var.oidc.kiali_client_secret
+  }
 }
 
 resource "kubernetes_service_account_v1" "kiali_admin" {
