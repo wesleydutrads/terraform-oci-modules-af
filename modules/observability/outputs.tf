@@ -45,5 +45,5 @@ output "grafana_admin_username" {
 
 output "grafana_readonly_mode" {
   description = "Grafana read-only access mode."
-  value       = var.enabled && var.enable_prometheus_stack && var.enable_grafana_anonymous_viewer ? "anonymous-viewer-behind-shared-gateway-token" : null
+  value       = var.enabled && var.enable_prometheus_stack && var.enable_grafana_anonymous_viewer ? (var.enable_monitoring_token_policy ? "anonymous-viewer-behind-shared-gateway-token" : "anonymous-viewer") : null
 }

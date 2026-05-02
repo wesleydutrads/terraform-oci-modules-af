@@ -30,9 +30,21 @@ variable "hosts" {
 }
 
 variable "monitoring_token" {
-  description = "Shared token required by Istio AuthorizationPolicy."
+  description = "Shared token used when the optional Istio AuthorizationPolicy is enabled."
   type        = string
   sensitive   = true
+}
+
+variable "enable_monitoring_token_policy" {
+  description = "Create an Istio AuthorizationPolicy requiring x-monitoring-token on public monitoring hosts. Keep false when browser access must not depend on custom headers."
+  type        = bool
+  default     = false
+}
+
+variable "enable_public_host_service_entries" {
+  description = "Create ServiceEntry resources for public monitoring hostnames referenced by HTTPRoutes and optional AuthorizationPolicy."
+  type        = bool
+  default     = true
 }
 
 variable "external_dns_target" {
@@ -77,7 +89,7 @@ variable "kiali_readonly_service_account_name" {
 }
 
 variable "enable_grafana_anonymous_viewer" {
-  description = "Enable Grafana anonymous Viewer access behind the shared Gateway token."
+  description = "Enable Grafana anonymous Viewer access. If enable_monitoring_token_policy=true, this remains behind the shared Gateway token."
   type        = bool
   default     = true
 }

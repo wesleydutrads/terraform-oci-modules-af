@@ -1,9 +1,12 @@
 locals {
-  kubeconfig_path        = pathexpand(var.kubeconfig_path)
-  tracing_host           = var.hosts.tracing
-  tracing_backend        = var.enable_tempo ? "monitoring-grafana" : "jaeger"
-  tracing_backend_port   = var.enable_tempo ? 80 : 16686
-  token_policy_manifest  = <<-YAML
+  kubeconfig_path                    = pathexpand(var.kubeconfig_path)
+  tracing_host                       = var.hosts.tracing
+  tracing_backend                    = var.enable_tempo ? "monitoring-grafana" : "jaeger"
+  tracing_backend_port               = var.enable_tempo ? 80 : 16686
+  public_hosts                       = distinct([var.hosts.kiali, var.hosts.grafana, local.tracing_host])
+  public_hosts_policy                = join("\n", [for host in local.public_hosts : "                  - ${host}"])
+  public_hosts_service_entry         = join("\n", [for host in local.public_hosts : "        - ${host}"])
+  token_policy_manifest              = <<-YAML
     apiVersion: security.istio.io/v1
     kind: AuthorizationPolicy
     metadata:
@@ -19,15 +22,32 @@ locals {
         - to:
             - operation:
                 hosts:
-                  - ${var.hosts.kiali}
-                  - ${var.hosts.grafana}
-                  - ${local.tracing_host}
+${local.public_hosts_policy}
           when:
             - key: request.headers[x-monitoring-token]
               notValues:
                 - ${var.monitoring_token}
     YAML
-  kiali_route_manifest   = <<-YAML
+  public_host_service_entry_manifest = <<-YAML
+    apiVersion: networking.istio.io/v1
+    kind: ServiceEntry
+    metadata:
+      name: monitoring-public-hosts
+      namespace: ${var.namespace}
+    spec:
+      hosts:
+${local.public_hosts_service_entry}
+      location: MESH_EXTERNAL
+      ports:
+        - number: 80
+          name: http
+          protocol: HTTP
+        - number: 443
+          name: https
+          protocol: HTTPS
+      resolution: DNS
+    YAML
+  kiali_route_manifest               = <<-YAML
     apiVersion: gateway.networking.k8s.io/v1
     kind: HTTPRoute
     metadata:
@@ -48,7 +68,7 @@ locals {
             - name: kiali
               port: 20001
     YAML
-  grafana_route_manifest = <<-YAML
+  grafana_route_manifest             = <<-YAML
     apiVersion: gateway.networking.k8s.io/v1
     kind: HTTPRoute
     metadata:
@@ -69,7 +89,7 @@ locals {
             - name: monitoring-grafana
               port: 80
     YAML
-  tracing_route_manifest = <<-YAML
+  tracing_route_manifest             = <<-YAML
     apiVersion: gateway.networking.k8s.io/v1
     kind: HTTPRoute
     metadata:
@@ -481,14 +501,29 @@ resource "null_resource" "token_policy" {
   count = var.enabled ? 1 : 0
 
   triggers = {
+    enabled      = tostring(var.enable_monitoring_token_policy)
     manifest_sha = nonsensitive(sha1(local.token_policy_manifest))
   }
 
   provisioner "local-exec" {
-    command = "${var.kubectl_path} --kubeconfig=${local.kubeconfig_path} apply -f - <<'YAML'\n${local.token_policy_manifest}\nYAML"
+    command = var.enable_monitoring_token_policy ? "${var.kubectl_path} --kubeconfig=${local.kubeconfig_path} apply -f - <<'YAML'\n${local.token_policy_manifest}\nYAML" : "${var.kubectl_path} --kubeconfig=${local.kubeconfig_path} delete authorizationpolicy monitoring-token-required -n ${var.gateway_namespace} --ignore-not-found"
   }
 
   depends_on = [helm_release.kiali]
+}
+
+resource "null_resource" "public_host_service_entries" {
+  count = var.enabled && var.enable_public_host_service_entries ? 1 : 0
+
+  triggers = {
+    manifest_sha = sha1(local.public_host_service_entry_manifest)
+  }
+
+  provisioner "local-exec" {
+    command = "${var.kubectl_path} --kubeconfig=${local.kubeconfig_path} apply -f - <<'YAML'\n${local.public_host_service_entry_manifest}\nYAML"
+  }
+
+  depends_on = [kubernetes_namespace_v1.this]
 }
 
 resource "null_resource" "kiali_route" {

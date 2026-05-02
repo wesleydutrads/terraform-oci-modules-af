@@ -11,9 +11,10 @@ Gateway API Gateway.
 - Tempo for traces
 - optional legacy Jaeger all-in-one
 - HTTPRoutes for Kiali, Grafana, and tracing
-- Istio AuthorizationPolicy that requires a shared `x-monitoring-token` header
+- optional Istio AuthorizationPolicy requiring a shared `x-monitoring-token` header
+- ServiceEntry for public dashboard hostnames to keep Istio/Kiali validation clean
 - admin and read-only ServiceAccounts for Kiali token login
-- optional Grafana anonymous Viewer mode behind the shared Gateway token
+- optional Grafana anonymous Viewer mode
 
 ## Storage
 
@@ -77,17 +78,20 @@ module "observability" {
 ```mermaid
 flowchart LR
   User[User] --> GW[Shared Gateway]
-  GW --> Token[x-monitoring-token]
-  Token -->|valid| Apps[Grafana / Kiali / Tracing]
-  Token -->|invalid| Deny[403]
+  GW --> Apps[Grafana / Kiali / Tracing]
+  GW -. optional .-> Token[x-monitoring-token AuthorizationPolicy]
+  Token -. invalid .-> Deny[403]
   KialiToken[Kubernetes SA token] --> Kiali[Kiali RBAC]
 ```
 
-Requests must include:
+By default, browser access does not require a custom header:
 
-```text
-x-monitoring-token: <monitoring_token>
+```hcl
+enable_monitoring_token_policy = false
 ```
+
+Set `enable_monitoring_token_policy=true` to require
+`x-monitoring-token: <monitoring_token>` at the Gateway.
 
 Kiali still requires a Kubernetes ServiceAccount token when
 `kiali_auth_strategy="token"`. The module can create:
@@ -96,8 +100,9 @@ Kiali still requires a Kubernetes ServiceAccount token when
 - `kiali-readonly`, bound to the Kiali viewer ClusterRole
 
 Grafana admin login uses the configured admin password. Read-only Grafana access
-can be provided through anonymous Viewer mode, but only after the request passes
-the shared Gateway token policy.
+can be provided through anonymous Viewer mode. When the optional Gateway token
+policy is enabled, the request must pass that policy before reaching Grafana,
+Kiali, or tracing.
 
 ## Related Documents
 
