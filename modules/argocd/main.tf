@@ -70,14 +70,14 @@ resource "helm_release" "this" {
       global = {
         domain = var.host
       }
-      configs = {
+      configs = merge({
         params = {
           "server.insecure" = true
         }
         cm = merge({
           "admin.enabled" = tostring(var.admin_enabled)
-          url             = "https://${var.host}"
           }, local.oidc_enabled ? {
+          url = "https://${var.host}"
           "oidc.config" = yamlencode({
             name         = "Keycloak"
             issuer       = var.oidc.issuer_url
@@ -91,19 +91,20 @@ resource "helm_release" "this" {
             ]
           })
         } : {})
-        rbac = local.oidc_enabled ? {
-          "policy.csv" = <<-CSV
+        }, jsondecode(local.oidc_enabled ? jsonencode({
+          rbac = {
+            "policy.csv" = <<-CSV
             g, ${var.oidc.admin_group}, role:admin
             g, ${var.oidc.readonly_group}, role:readonly
           CSV
-          "scopes"     = "[groups]"
-        } : {}
-        secret = local.oidc_enabled ? {
-          extra = {
-            "oidc.keycloak.clientSecret" = var.oidc.client_secret
+            "scopes"     = "[groups]"
           }
-        } : {}
-      }
+          secret = {
+            extra = {
+              "oidc.keycloak.clientSecret" = var.oidc.client_secret
+            }
+          }
+      }) : "{}"))
       server = {
         extraArgs = ["--insecure"]
         service = {

@@ -137,13 +137,17 @@ resource "helm_release" "prometheus_stack" {
       grafana = {
         enabled       = true
         adminPassword = var.monitoring_token
-        "grafana.ini" = {
+        "grafana.ini" = merge({
           "auth.anonymous" = {
             enabled  = var.enable_grafana_anonymous_viewer
             org_name = "Main Org."
             org_role = "Viewer"
           }
-          "auth.generic_oauth" = local.oidc_enabled ? {
+          users = {
+            viewers_can_edit = false
+          }
+          }, local.oidc_enabled ? {
+          "auth.generic_oauth" = {
             enabled             = true
             name                = "Keycloak"
             allow_sign_up       = true
@@ -154,11 +158,8 @@ resource "helm_release" "prometheus_stack" {
             token_url           = "${var.oidc.issuer_url}/protocol/openid-connect/token"
             api_url             = "${var.oidc.issuer_url}/protocol/openid-connect/userinfo"
             role_attribute_path = "contains(groups[*], '${var.oidc.admin_group}') && 'Admin' || contains(groups[*], '${var.oidc.readonly_group}') && 'Viewer' || 'Viewer'"
-          } : {}
-          users = {
-            viewers_can_edit = false
           }
-        }
+        } : {})
         persistence = {
           enabled          = var.enable_grafana_persistence
           storageClassName = var.monitoring_storage_class_name

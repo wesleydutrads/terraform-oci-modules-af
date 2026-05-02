@@ -75,8 +75,7 @@ variable "oidc" {
     admin_group           = optional(string, "platform-admins")
     readonly_group        = optional(string, "platform-readonly")
   })
-  default   = null
-  sensitive = true
+  default = null
 }
 
 variable "istio_root_namespace" {
