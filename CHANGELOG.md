@@ -16,6 +16,10 @@
 - Added MySQL HeatWave Always Free support in the databases module using
   `MySQL.Free`. Decision: relational persistence for Keycloak must stay opt-in
   and guarded by shape validation.
+- Added optional MySQL private DNS support in the databases module, including
+  support for a dedicated private zone or a caller-provided private zone OCID.
+  Decision: application-owned database records need writable private DNS; OCI
+  protected subnet zones can reject custom RRSet updates.
 
 ### Changed
 

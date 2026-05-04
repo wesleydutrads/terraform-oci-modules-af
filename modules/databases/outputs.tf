@@ -22,6 +22,16 @@ output "mysql_endpoint" {
   } : null
 }
 
+output "mysql_private_fqdn" {
+  description = "OCI Private DNS FQDN for the MySQL endpoint."
+  value       = var.enable_mysql_heatwave && var.enable_mysql_private_dns ? local.mysql_private_fqdn : null
+}
+
+output "mysql_private_dns_zone_id" {
+  description = "OCI Private DNS zone OCID for the MySQL endpoint."
+  value       = var.enable_mysql_heatwave && var.enable_mysql_private_dns ? local.mysql_private_zone_id : null
+}
+
 output "mysql_admin_username" {
   description = "MySQL admin username."
   value       = var.enable_mysql_heatwave ? var.mysql_admin_username : null

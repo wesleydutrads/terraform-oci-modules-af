@@ -21,6 +21,12 @@ variable "mysql_subnet_id" {
   default     = null
 }
 
+variable "vcn_id" {
+  description = "VCN OCID used to attach optional private DNS records."
+  type        = string
+  default     = null
+}
+
 variable "enable_autonomous_database" {
   description = "Create an Autonomous Database Always Free resource."
   type        = bool
@@ -67,6 +73,30 @@ variable "mysql_backup_enabled" {
   description = "Reserved for future paid MySQL profiles. Always Free backup policy is fixed by OCI and is not set by this module."
   type        = bool
   default     = false
+}
+
+variable "enable_mysql_private_dns" {
+  description = "Create an OCI Private DNS zone and A record for the MySQL endpoint."
+  type        = bool
+  default     = false
+}
+
+variable "mysql_private_dns_zone_name" {
+  description = "Private DNS zone name for the MySQL endpoint."
+  type        = string
+  default     = "platform.internal"
+}
+
+variable "mysql_private_dns_zone_id" {
+  description = "Existing OCI Private DNS zone OCID. When set, the module reuses it instead of creating a zone."
+  type        = string
+  default     = null
+}
+
+variable "mysql_private_dns_record_name" {
+  description = "Record name inside mysql_private_dns_zone_name."
+  type        = string
+  default     = "mysql"
 }
 
 variable "enable_nosql_tables" {
