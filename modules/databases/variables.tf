@@ -69,12 +69,6 @@ variable "mysql_storage_size_gb" {
   default     = 50
 }
 
-variable "mysql_backup_enabled" {
-  description = "Reserved for future paid MySQL profiles. Always Free backup policy is fixed by OCI and is not set by this module."
-  type        = bool
-  default     = false
-}
-
 variable "enable_mysql_private_dns" {
   description = "Create an OCI Private DNS zone and A record for the MySQL endpoint."
   type        = bool
