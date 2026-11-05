@@ -32,3 +32,18 @@ output "public_route_table_id" {
   description = "Public route table OCID."
   value       = oci_core_route_table.public.id
 }
+
+output "nodes_nat_gateway_id" {
+  description = "Managed worker node NAT Gateway OCID, or null when disabled."
+  value       = var.enable_nodes_nat_gateway ? oci_core_nat_gateway.nodes[0].id : null
+}
+
+output "nodes_nat_gateway_public_ip" {
+  description = "Managed worker node NAT Gateway public IP, or null when disabled."
+  value       = var.enable_nodes_nat_gateway ? oci_core_nat_gateway.nodes[0].nat_ip : null
+}
+
+output "nodes_route_table_id" {
+  description = "Effective worker node route table OCID; falls back to the public route table when NAT is disabled."
+  value       = oci_core_subnet.nodes.route_table_id
+}

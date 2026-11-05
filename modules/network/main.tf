@@ -27,6 +27,37 @@ resource "oci_core_service_gateway" "this" {
   }
 }
 
+resource "oci_core_nat_gateway" "nodes" {
+  count = var.enable_nodes_nat_gateway ? 1 : 0
+
+  compartment_id = var.compartment_ocid
+  vcn_id         = oci_core_vcn.this.id
+  display_name   = "${var.name_prefix}-nat-nodes"
+  block_traffic  = false
+  freeform_tags  = var.freeform_tags
+}
+
+resource "oci_core_route_table" "nodes" {
+  count = var.enable_nodes_nat_gateway ? 1 : 0
+
+  compartment_id = var.compartment_ocid
+  vcn_id         = oci_core_vcn.this.id
+  display_name   = "${var.name_prefix}-rt-nodes"
+  freeform_tags  = var.freeform_tags
+
+  route_rules {
+    destination       = "0.0.0.0/0"
+    destination_type  = "CIDR_BLOCK"
+    network_entity_id = oci_core_nat_gateway.nodes[0].id
+  }
+
+  route_rules {
+    destination       = data.oci_core_services.all.services[0].cidr_block
+    destination_type  = "SERVICE_CIDR_BLOCK"
+    network_entity_id = oci_core_service_gateway.this.id
+  }
+}
+
 resource "oci_core_route_table" "public" {
   compartment_id = var.compartment_ocid
   vcn_id         = oci_core_vcn.this.id
@@ -69,6 +100,19 @@ resource "oci_core_security_list" "api" {
     content {
       source   = ingress_security_rules.value
       protocol = "6"
+      tcp_options {
+        min = 6443
+        max = 6443
+      }
+    }
+  }
+
+  dynamic "ingress_security_rules" {
+    for_each = var.api_security_list_additional_access
+    content {
+      source      = ingress_security_rules.value.cidr
+      description = ingress_security_rules.value.description
+      protocol    = "6"
       tcp_options {
         min = 6443
         max = 6443
@@ -210,7 +254,7 @@ resource "oci_core_subnet" "nodes" {
   vcn_id                     = oci_core_vcn.this.id
   display_name               = "${var.name_prefix}-subnet-nodes"
   cidr_block                 = var.nodes_subnet_cidr
-  route_table_id             = oci_core_route_table.public.id
+  route_table_id             = var.enable_nodes_nat_gateway ? oci_core_route_table.nodes[0].id : oci_core_route_table.public.id
   security_list_ids          = [oci_core_security_list.nodes.id]
   prohibit_public_ip_on_vnic = false
   dns_label                  = "nodesubnet"
